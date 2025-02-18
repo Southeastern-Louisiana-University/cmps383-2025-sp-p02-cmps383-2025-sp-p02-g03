@@ -1,6 +1,9 @@
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
+using System.Data;
+using Selu383.SP25.P02.Api.Features.Identity;
 
 namespace Selu383.SP25.P02.Api
 {
@@ -13,6 +16,38 @@ namespace Selu383.SP25.P02.Api
             // Add services to the container.
             builder.Services.AddDbContext<DataContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ?? throw new InvalidOperationException("Connection string 'DataContext' not found.")));
+
+            //Identity stuff
+            builder.Services.AddIdentity<User, Role>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 6;
+            })
+                 .AddEntityFrameworkStores<DataContext>()
+                 .AddSignInManager()
+                 .AddDefaultTokenProviders();
+
+            //Cookie setting
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.ExpireTimeSpan = TimeSpan.FromHours(1);
+                options.SlidingExpiration=true;
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    if (context.Request.Path.StartsWithSegments("/api"))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    } 
+                    else {
+                        context.Response.Redirect(context.RedirectUri);
+                    }
+                    return Task.CompletedTask;
+                };
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -34,12 +69,10 @@ namespace Selu383.SP25.P02.Api
             }
 
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
-
             app.MapControllers();
-
             app.Run();
         }
     }
