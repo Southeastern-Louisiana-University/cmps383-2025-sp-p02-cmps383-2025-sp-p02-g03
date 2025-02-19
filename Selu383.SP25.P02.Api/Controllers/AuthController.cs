@@ -41,7 +41,7 @@ namespace Selu383.SP25.P02.Api.Controllers
     }
     public class LoginRequest
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
     }
 }
