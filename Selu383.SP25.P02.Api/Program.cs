@@ -1,6 +1,12 @@
 
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
+using Selu383.SP25.P02.Api.Features.Roles;
+using Selu383.SP25.P02.Api.Features.Users;
 
 namespace Selu383.SP25.P02.Api
 {
@@ -14,9 +20,28 @@ namespace Selu383.SP25.P02.Api
             builder.Services.AddDbContext<DataContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ?? throw new InvalidOperationException("Connection string 'DataContext' not found.")));
 
+            // Configure Identity
+            builder.Services.AddIdentity<User, Role>()
+                .AddEntityFrameworkStores<DataContext>()
+                .AddDefaultTokenProviders();
+
+            // Configure authentication & authorization
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+            });
+
+            builder.Services.AddAuthorization();
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie();
+
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
@@ -24,15 +49,19 @@ namespace Selu383.SP25.P02.Api
             {
                 var db = scope.ServiceProvider.GetRequiredService<DataContext>();
                 await db.Database.MigrateAsync();
+                await SeedRoles.Initialize(scope.ServiceProvider);
                 SeedTheaters.Initialize(scope.ServiceProvider);
             }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.MapOpenApi();
+                app.UseSwagger();
+                app.UseSwaggerUI();
+                app.UseAuthentication();
             }
 
+            app.UseRewriter(new RewriteOptions().AddRedirect("^$", "swagger"));
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
