@@ -20,7 +20,15 @@ namespace Selu383.SP25.P02.Api
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DataContext") ?? throw new InvalidOperationException("Connection string 'DataContext' not found.")));
 
             // Configure Identity
-            builder.Services.AddIdentity<User, Role>()
+            builder.Services.AddIdentity<User, Role>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 1;
+            })
                 .AddEntityFrameworkStores<DataContext>()
                 .AddDefaultTokenProviders();
 
@@ -60,12 +68,11 @@ namespace Selu383.SP25.P02.Api
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-                app.UseAuthentication();
             }
 
             app.UseRewriter(new RewriteOptions().AddRedirect("^$", "swagger"));
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
