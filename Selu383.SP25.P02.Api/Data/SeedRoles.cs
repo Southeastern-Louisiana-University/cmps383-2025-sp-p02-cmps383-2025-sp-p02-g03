@@ -10,14 +10,12 @@ namespace Selu383.SP25.P02.Api.Data
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<Role>>();
 
-            // Check if the Admin role exists, if not, create it
             if (await roleManager.FindByNameAsync("Admin") == null)
             {
                 var adminRole = new Role { Name = "Admin" };
                 await roleManager.CreateAsync(adminRole);
             }
 
-            // Check if the User role exists, if not, create it
             if (await roleManager.FindByNameAsync("User") == null)
             {
                 var userRole = new Role { Name = "User" };

@@ -1,6 +1,5 @@
 
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
@@ -48,8 +47,11 @@ namespace Selu383.SP25.P02.Api
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
                 await db.Database.MigrateAsync();
                 await SeedRoles.Initialize(scope.ServiceProvider);
+                await SeedUsers.Initialize(scope.ServiceProvider, userManager, roleManager);
                 SeedTheaters.Initialize(scope.ServiceProvider);
             }
 
