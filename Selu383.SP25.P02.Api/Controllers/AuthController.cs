@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Selu383.SP25.P02.Api.Features;
 using Selu383.SP25.P02.Api.Features.Identity;
 using System.Threading.Tasks;
 
@@ -23,13 +24,13 @@ namespace Selu383.SP25.P02.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var user = await _userManager.FindByEmailAsync(request.UserName);
+            var user = await _userManager.FindByNameAsync(request.UserName);
             if (user == null) return Unauthorized("Invalid User");
 
             var result = await _signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: false);
             if (!result.Succeeded) return Unauthorized("Invalid Credentials");
 
-            return Ok("Success");
+            return Ok(new UserDto { });
         }
 
         [Authorize]
