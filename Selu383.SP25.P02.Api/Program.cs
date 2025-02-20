@@ -60,6 +60,7 @@ namespace Selu383.SP25.P02.Api
                 var db = scope.ServiceProvider.GetRequiredService<DataContext>();
                 await db.Database.MigrateAsync();
                 SeedTheaters.Initialize(scope.ServiceProvider);
+                await SeedUsers.Initialize(scope.ServiceProvider);
             }
 
             // Configure the HTTP request pipeline.
