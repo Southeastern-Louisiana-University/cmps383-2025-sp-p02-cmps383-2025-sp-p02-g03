@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using Selu383.SP25.P02.Api.Features;
 using Selu383.SP25.P02.Api.Features.Identity;
-using System.Threading.Tasks;
+using Selu383.SP25.P02.Api.Features.Users;
+
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
