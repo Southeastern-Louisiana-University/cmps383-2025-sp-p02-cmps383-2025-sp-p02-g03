@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
 using Selu383.SP25.P02.Api.Features.Theaters;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
+    [Authorize]
     [Route("api/theaters")]
     [ApiController]
     public class TheatersController : ControllerBase
@@ -37,14 +39,23 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(result);
         }
 
+        
         [HttpPost]
         public ActionResult<TheaterDto> CreateTheater(TheaterDto dto)
         {
+            
             if (IsInvalid(dto))
             {
                 return BadRequest();
             }
-
+            if (!User.IsInRole("Admin"))
+            {
+                return StatusCode(403);
+            }
+            if (User == null)
+            {
+                return Unauthorized();
+            }
             var theater = new Theater
             {
                 Name = dto.Name,
