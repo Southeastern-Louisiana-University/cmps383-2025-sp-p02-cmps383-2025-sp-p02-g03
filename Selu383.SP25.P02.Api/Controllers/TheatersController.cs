@@ -48,14 +48,15 @@ namespace Selu383.SP25.P02.Api.Controllers
             {
                 return BadRequest();
             }
-            if (!User.IsInRole("Admin"))
-            {
-                return StatusCode(403);
-            }
             if (User == null)
             {
                 return Unauthorized();
             }
+            if (!User.IsInRole("Admin"))
+            {
+                return StatusCode(403);
+            }
+            
             var theater = new Theater
             {
                 Name = dto.Name,
