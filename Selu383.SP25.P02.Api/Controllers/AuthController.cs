@@ -49,6 +49,30 @@ namespace Selu383.SP25.P02.Api.Controllers
             await _signInManager.SignOutAsync();
             return Ok("Successfully logged out");
         }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var userDto = new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Roles = roles.ToList()
+            };
+
+
+            return Ok(userDto);
+        }
+
+
     }
     public class LoginRequest
     {
