@@ -27,9 +27,19 @@ namespace Selu383.SP25.P02.Api.Controllers
             if (user == null) return Unauthorized("Invalid User");
 
             var result = await _signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: false);
-            if (!result.Succeeded) return Unauthorized("Invalid Credentials");
-
-            return Ok(new UserDto { });
+            if (result.Succeeded)
+            {
+                return Ok(new UserDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Roles = (await _userManager.GetRolesAsync(user)).ToList()
+                });
+            }
+            else
+            {
+                return Unauthorized("Invalid Credentials");
+            }
         }
 
         [Authorize]

@@ -2,8 +2,8 @@
 {
     public class UserDto
     {
-        int Id { get; set; }
-        string UserName { get; set; }
-        string[] Roles { get; set; }
+       public int Id { get; set; }
+       public string UserName { get; set; }
+        public List<string> Roles { get; set; }
     }
 }
