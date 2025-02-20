@@ -2,27 +2,28 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Selu383.SP25.P02.Api.Features.Identity;
 using System.Threading.Tasks;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
-    [Route("api/auth")]
+    [Route("api/authentication")]
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<User> _signInManager;
+        private readonly UserManager<User> _userManager;
 
-        public AuthController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login(LoginRequest request)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager.FindByEmailAsync(request.UserName);
             if (user == null) return Unauthorized("Invalid User");
 
             var result = await _signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: false);
@@ -41,7 +42,7 @@ namespace Selu383.SP25.P02.Api.Controllers
     }
     public class LoginRequest
     {
-        public required string Email { get; set; }
+        public required string UserName { get; set; }
         public required string Password { get; set; }
     }
 }

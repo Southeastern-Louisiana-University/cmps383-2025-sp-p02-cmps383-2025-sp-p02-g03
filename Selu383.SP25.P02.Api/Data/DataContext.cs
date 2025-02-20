@@ -20,14 +20,6 @@ namespace Selu383.SP25.P02.Api.Data
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<User>().ToTable("Users");
-            builder.Entity<Role>().ToTable("Roles");
-            builder.Entity<UserRoles>().ToTable("UserRoles");
-            builder.Entity<IdentityUserClaim<int>>().ToTable("UserClaims");
-            builder.Entity<IdentityUserLogin<int>>().ToTable("UserLogins");
-            builder.Entity<IdentityRoleClaim<int>>().ToTable("RoleClaims");
-            builder.Entity<IdentityUserToken<int>>().ToTable("UserTokens");
-
             builder.Entity<UserRoles>(userRole =>
             {
                 userRole.HasKey(ur => new { ur.UserId, ur.RoleId });
