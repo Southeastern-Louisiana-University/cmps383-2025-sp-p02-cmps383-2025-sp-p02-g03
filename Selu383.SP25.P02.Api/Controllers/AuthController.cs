@@ -38,7 +38,7 @@ namespace Selu383.SP25.P02.Api.Controllers
             }
             else
             {
-                return Unauthorized("Invalid Credentials");
+                return BadRequest("Invalid Credentials");
             }
         }
 
