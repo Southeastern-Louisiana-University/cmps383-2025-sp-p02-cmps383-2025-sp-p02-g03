@@ -6,7 +6,7 @@ using Selu383.SP25.P02.Api.Features.Theaters;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
-    [Authorize]
+    
     [Route("api/theaters")]
     [ApiController]
     public class TheatersController : ControllerBase
@@ -39,7 +39,7 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(result);
         }
 
-        
+        [Authorize]
         [HttpPost]
         public ActionResult<TheaterDto> CreateTheater(TheaterDto dto)
         {
@@ -56,6 +56,7 @@ namespace Selu383.SP25.P02.Api.Controllers
             {
                 return StatusCode(403);
             }
+            
             
             var theater = new Theater
             {
