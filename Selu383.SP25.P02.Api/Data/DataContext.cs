@@ -25,7 +25,7 @@ namespace Selu383.SP25.P02.Api.Data
                 userRole.HasKey(ur => new { ur.UserId, ur.RoleId });
 
                 userRole.HasOne(ur => ur.Role)
-                    .WithMany(r => r.Users)
+                    .WithMany(r => r.User)
                     .HasForeignKey(ur => ur.RoleId)
                     .IsRequired();
 

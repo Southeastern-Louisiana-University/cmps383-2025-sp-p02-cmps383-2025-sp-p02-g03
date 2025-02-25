@@ -1,74 +1,91 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Selu383.SP25.P02.Api.Data;
-using Selu383.SP25.P02.Api.Features.Identity;
 using Selu383.SP25.P02.Api.Features.Users;
 
-namespace Selu383.SP25.P02.Api.Controllers
+namespace Selu383.SP25.P02.Api.Features.Users
 {
-    [Authorize]
-    [Route("api/users")]
+    
     [ApiController]
-    public class UserController : ControllerBase
+    [Route("api/users")]
+    
+    public class UsersController : ControllerBase
     {
-        private readonly UserManager<User> _userManager;
-        private readonly DataContext _dataContext;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserController(UserManager<User> userManager, DataContext dataContext)
+        public UsersController(UserManager<IdentityUser> userManager,
+                               RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
-            _dataContext = dataContext;
+            _roleManager = roleManager;
         }
 
+        
         [HttpPost]
-        public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto dto)
-        { 
-            if (dto == null || string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.Password))
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
+        {
+            //check if any user data given at all
+            if (createUserDto == null)
             {
-                return BadRequest("Username and password are required");
+                return BadRequest("Invalid user data.");
             }
 
-            bool existingUser = _dataContext.Users.Any(u => u.UserName == dto.UserName);
-            if(existingUser)
+            //check if any roles given
+            if (createUserDto.Roles == null || !createUserDto.Roles.Any())
             {
-                return BadRequest("Username exists");
+                return BadRequest("At least one role must be provided.");
             }
 
-            if (dto.Roles.Any(Role => !_dataContext.Roles.Any(r => r.Name == role)))
+            //check if given roles exist
+            foreach (var role in createUserDto.Roles)
             {
-                return BadRequest("Roles are required");
+                if (!await _roleManager.RoleExistsAsync(role))
+                {
+                    return BadRequest($"Role '{role}' does not exist.");
+                }
             }
 
-            if (dto.Roles.Any(role = !_dataContext.Roles.Any(r => r.Name = role)))
+            //check if exists
+            var existingUser = await _userManager.FindByNameAsync(createUserDto.UserName);
+            if (existingUser != null)
             {
-                return BadRequest("Role does not exist");
+                return BadRequest("Username already exists.");
             }
 
-            var user = new User
+            //make new identity User of given name
+            var newUser = new IdentityUser
             {
-                UserName = dto.UserName
+                UserName = createUserDto.UserName
             };
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
+            
+            //await creation of user and password and if not successful - return bad request.
+            var createUserResult = await _userManager.CreateAsync(newUser, createUserDto.Password);
+            if (!createUserResult.Succeeded)
             {
-                return BadRequest("Password doens't meet the requirements");
+                return BadRequest(createUserResult.Errors);
             }
 
-            foreach(var role in dto.Roles)
+            //await addition of roles to the new user
+            var addRolesResult = await _userManager.AddToRolesAsync(newUser, createUserDto.Roles);
+            if (!addRolesResult.Succeeded)
             {
-                await _userManager.AddToRoleAsync(user, role);
+                
+                await _userManager.DeleteAsync(newUser);
+                return BadRequest(addRolesResult.Errors);
             }
 
+           //make a new userDto to send back with OK 200
             var userDto = new UserDto
             {
-                Id = user.Id,
-                UserName = user.UserName,
-                Roles = user.Roles.Select(r => r.Role.Name).ToArray()
+                UserName = newUser.UserName,
+                Roles = createUserDto.Roles
             };
 
             return Ok(userDto);
-        }   
+        }
+        
     }
+    // DTO for creating a user
+
+
 }
