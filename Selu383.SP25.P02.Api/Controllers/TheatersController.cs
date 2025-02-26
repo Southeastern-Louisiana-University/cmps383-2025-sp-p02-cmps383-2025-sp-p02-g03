@@ -1,22 +1,26 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Selu383.SP25.P02.Api.Data;
+using Selu383.SP25.P02.Api.Features.Identity;
 using Selu383.SP25.P02.Api.Features.Theaters;
 
 namespace Selu383.SP25.P02.Api.Controllers
 {
-    
+
     [Route("api/theaters")]
     [ApiController]
     public class TheatersController : ControllerBase
     {
         private readonly DbSet<Theater> theaters;
         private readonly DataContext dataContext;
+        private readonly UserManager<User> userManager;
 
-        public TheatersController(DataContext dataContext)
+        public TheatersController(DataContext dataContext, UserManager<User> userManager)
         {
             this.dataContext = dataContext;
+            this.userManager = userManager;
             theaters = dataContext.Set<Theater>();
         }
 
@@ -39,34 +43,33 @@ namespace Selu383.SP25.P02.Api.Controllers
             return Ok(result);
         }
 
-        [Authorize]
         [HttpPost]
-        public ActionResult<TheaterDto> CreateTheater(TheaterDto dto)
+        [Authorize]
+        public async Task<ActionResult<TheaterDto>> CreateTheater(TheaterDto dto)
         {
-            
+            var user = await userManager.GetUserAsync(User);
+            var isAdmin = user != null && await userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin)
+            {
+                return StatusCode(403);
+            }
+
             if (IsInvalid(dto))
             {
                 return BadRequest();
             }
-            if (User == null)
-            {
-                return Unauthorized();
-            }
-            if (!User.IsInRole("Admin"))
-            {
-                return StatusCode(403);
-            }
-            
-            
+
             var theater = new Theater
             {
                 Name = dto.Name,
                 Address = dto.Address,
                 SeatCount = dto.SeatCount,
+                ManagerId = dto.ManagerId
             };
             theaters.Add(theater);
 
-            dataContext.SaveChanges();
+            await dataContext.SaveChangesAsync();
 
             dto.Id = theater.Id;
 
@@ -75,43 +78,67 @@ namespace Selu383.SP25.P02.Api.Controllers
 
         [HttpPut]
         [Route("{id}")]
-        public ActionResult<TheaterDto> UpdateTheater(int id, TheaterDto dto)
+        [Authorize]
+        public async Task<ActionResult<TheaterDto>> UpdateTheater(int id, TheaterDto dto)
         {
             if (IsInvalid(dto))
             {
                 return BadRequest();
             }
 
-            var theater = theaters.FirstOrDefault(x => x.Id == id);
+            var theater = await theaters.FirstOrDefaultAsync(x => x.Id == id);
             if (theater == null)
             {
                 return NotFound();
+            }
+
+            var user = await userManager.GetUserAsync(User);
+            var isAdmin = user != null && await userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && (theater.ManagerId != user?.Id))
+            {
+                return StatusCode(403);
             }
 
             theater.Name = dto.Name;
             theater.Address = dto.Address;
             theater.SeatCount = dto.SeatCount;
 
-            dataContext.SaveChanges();
+            if (isAdmin)
+            {
+                theater.ManagerId = dto.ManagerId;
+            }
+
+            await dataContext.SaveChangesAsync();
 
             dto.Id = theater.Id;
+            dto.ManagerId = theater.ManagerId;
 
             return Ok(dto);
         }
 
         [HttpDelete]
         [Route("{id}")]
-        public ActionResult DeleteTheater(int id)
+        [Authorize]
+        public async Task<ActionResult> DeleteTheater(int id)
         {
-            var theater = theaters.FirstOrDefault(x => x.Id == id);
+            var theater = await theaters.FirstOrDefaultAsync(x => x.Id == id);
             if (theater == null)
             {
                 return NotFound();
             }
 
+            var user = await userManager.GetUserAsync(User);
+            var isAdmin = user != null && await userManager.IsInRoleAsync(user, "Admin");
+
+            if (!isAdmin && (theater.ManagerId != user?.Id))
+            {
+                return StatusCode(403);
+            }
+
             theaters.Remove(theater);
 
-            dataContext.SaveChanges();
+            await dataContext.SaveChangesAsync();
 
             return Ok();
         }
@@ -133,6 +160,7 @@ namespace Selu383.SP25.P02.Api.Controllers
                     Name = x.Name,
                     Address = x.Address,
                     SeatCount = x.SeatCount,
+                    ManagerId = x.ManagerId
                 });
         }
     }
