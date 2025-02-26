@@ -1,96 +1,103 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using System.Threading.Tasks;
 using System.Linq;
-using Selu383.SP25.P02.Api.Features.Users
+using System.Threading.Tasks;
+using Selu383.SP25.P02.Api.Features.Users;
+using Selu383.SP25.P02.Api.Features.Identity;
 
-namespace YourNamespace.Controllers
+namespace Selu383.SP25.P02.Api.Controllers
 {
+    [Route("/api/users")]
     [ApiController]
-    [Route("api/users")]
-    [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<Role> _roleManager;
 
-        public UsersController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public UsersController(
+            UserManager<User> userManager,
+            RoleManager<Role> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto dto)
         {
-            // Validate input DTO exists
-            if (dto == null)
-            {
-                return BadRequest("User data is required.");
-            }
-
-            // Validate required properties
-            if (string.IsNullOrWhiteSpace(dto.UserName))
-            {
-                return BadRequest("UserName is required.");
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.Password))
-            {
-                return BadRequest("Password is required.");
-            }
-
-            if (dto.Roles == null || !dto.Roles.Any())
-            {
-                return BadRequest("At least one role must be provided.");
-            }
-
-            // Check for duplicate username
+            
             var existingUser = await _userManager.FindByNameAsync(dto.UserName);
             if (existingUser != null)
             {
-                return BadRequest("Username already exists.");
+                return BadRequest(new { error = "Username already exists" });
             }
 
-            // Validate that each provided role exists
+           
+            if (dto.Roles == null || !dto.Roles.Any())
+            {
+                return BadRequest(new { error = "At least one role must be provided" });
+            }
+
+            
             foreach (var role in dto.Roles)
             {
-                if (string.IsNullOrWhiteSpace(role) || !await _roleManager.RoleExistsAsync(role))
+                if (!await _roleManager.RoleExistsAsync(role))
                 {
-                    return BadRequest($"Role '{role}' does not exist.");
+                    return BadRequest(new { error = $"Role '{role}' does not exist" });
                 }
             }
 
-            // Create the new IdentityUser (Email is optional)
-            var user = new IdentityUser
+            
+            dto.Roles = dto.Roles.Distinct().ToList();
+
+            
+            var user = new User
             {
-                UserName = dto.UserName
+                UserName = dto.UserName,
             };
 
-            // Create the user using ASP Identity (password rules enforced here)
-            var createResult = await _userManager.CreateAsync(user, dto.Password);
-            if (!createResult.Succeeded)
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
             {
-                return BadRequest(createResult.Errors);
+                return BadRequest(new { errors = result.Errors });
             }
 
-            // Assign the roles
-            var addRoleResult = await _userManager.AddToRolesAsync(user, dto.Roles);
-            if (!addRoleResult.Succeeded)
+            
+            result = await _userManager.AddToRolesAsync(user, dto.Roles);
+            if (!result.Succeeded)
             {
-                return BadRequest(addRoleResult.Errors);
+                
+                await _userManager.DeleteAsync(user);
+                return BadRequest(new { errors = result.Errors });
             }
 
-            // Prepare the response DTO
             var userDto = new UserDto
             {
                 Id = user.Id,
-                UserName = user.UserName,
-                Roles = dto.Roles.ToArray()
+                UserName = user.UserName!,
+                Roles = (await _userManager.GetRolesAsync(user)).ToList()
             };
 
             return Ok(userDto);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UserDto>> GetUserById(int id)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName!,
+                Roles = (await _userManager.GetRolesAsync(user)).ToList()
+            };
         }
     }
 }
