@@ -70,14 +70,12 @@ namespace Selu383.SP25.P02.Api
             }
 
             app.UseHttpsRedirection();
+
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseRouting()
-    .UseEndpoints(x =>
-    {
-        x.MapControllers();
-    });
-
+            app.UseRouting();
+            app.UseAuthorization();
+            app.MapControllers();
             app.UseStaticFiles();
 
             if (app.Environment.IsDevelopment())
