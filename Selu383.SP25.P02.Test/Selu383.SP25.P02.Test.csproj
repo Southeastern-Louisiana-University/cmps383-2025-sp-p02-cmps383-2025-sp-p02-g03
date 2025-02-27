@@ -17,10 +17,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Selu383.SP25.P02.Web.esproj" />
-    </ItemGroup>
-
-    <ItemGroup>
         <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
     </ItemGroup>
 
