@@ -38,13 +38,13 @@ namespace Selu383.SP25.P02.Api
                 options.SlidingExpiration=true;
                 options.Events.OnRedirectToLogin = context =>
                 {
-                    if (context.Request.Path.StartsWithSegments("/api"))
-                    {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    } 
-                    else {
-                        context.Response.Redirect(context.RedirectUri);
-                    }
+
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
                 };
             });
@@ -71,12 +71,14 @@ namespace Selu383.SP25.P02.Api
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.UseRouting();
-            app.UseAuthorization();
-            app.MapControllers();
             app.UseStaticFiles();
+            app.UseRouting()
+                .UseAuthentication()
+                .UseAuthorization()
+                .UseEndpoints(x =>
+                {
+                    x.MapControllers();
+                });
 
             if (app.Environment.IsDevelopment())
             {
